@@ -5,7 +5,7 @@ const sendEmail = async(options) =>{
         service:"gmail",
         auth:{
             user:process.env.SMPT_MAIL,
-            password:process.env.SMPT_PASSWORD
+            pass:process.env.SMPT_PASSWORD
         }
     })
 
@@ -16,7 +16,7 @@ const sendEmail = async(options) =>{
         text:options.message,
     };
 
-    await transporter.sendEmail (mailOptions);
+    await transporter.sendMail(mailOptions);
 
 };
 
