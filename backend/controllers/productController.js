@@ -87,3 +87,4 @@ exports.getProductDetails = catchAsyncErrors(async (req, res, next) => {
         product
     });
 });
+

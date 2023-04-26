@@ -101,7 +101,7 @@ exports.forgotPassword = catchAsyncErrors(async (req, res, next) => {
 exports.resetPassword = catchAsyncErrors(async (req, res, next) => {
 
     // creating token hash
-    const resetPasswordToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+    const resetPasswordToken = crypto.createHash("sha256").update(req.params.token).digest("hex");
 
     const user = await User.findOne({
         resetPasswordToken,
@@ -112,8 +112,8 @@ exports.resetPassword = catchAsyncErrors(async (req, res, next) => {
         return next(new ErrorHander("Reset Password token is invalid or has been expired", 400));
     }
 
-    if(req.body.password !== req.body.confirmPassword){
-        return next(new ErrorHander("Password does not match",400));
+    if (req.body.password !== req.body.confirmPassword) {
+        return next(new ErrorHander("Password does not match", 400));
     }
 
     user.password = req.body.password;
@@ -122,5 +122,86 @@ exports.resetPassword = catchAsyncErrors(async (req, res, next) => {
 
     await user.save();
 
-    sendToken(user, 200,res);
+    sendToken(user, 200, res);
+});
+
+// Get user details
+exports.getUserDetails = catchAsyncErrors(async (req, res, next) => {
+
+    const user = await User.findById(req.user.id);
+
+    res.status(200).json({
+        succes: true,
+        user
+    })
+})
+
+// update user password
+exports.updatePassword = catchAsyncErrors(async (req, res, next) => {
+
+    const user = await User.findById(req.user.id).select("+password");
+
+    const isPasswordMatched = await user.comparePassword(req.body.oldPassword);
+
+    if (!isPasswordMatched) {
+        return next(new ErrorHander("Old password is incorrect", 400));
+    }
+
+    if (req.body.newPassword !== req.body.confirmPassword) {
+        return next(new ErrorHander("password does not match", 400));
+    }
+
+    user.password = req.body.newPassword;
+
+    await user.save();
+
+    sendToken(user, 200, res);
+});
+
+
+// update user profile
+exports.updateProfile = catchAsyncErrors(async (req, res, next) => {
+
+    const newUserData = {
+        name: req.body.name,
+        email: req.body.email,
+    }
+
+    // we will add cloudinary later
+
+    const user = await User.findByIdAndUpdate(req.user.id, newUserData, {
+        new: true,
+        runValidators: true,
+        useFindAndModify: false,
+    });
+
+    res.status(200).json({
+        success: true,
+
+    });
+
+});
+
+// get all users (admin)
+exports.getAllUser = catchAsyncErrors(async (req, res, next) => {
+    const users = await user.find();
+
+    res.status(200).json({
+        success: true,
+        users,
+    });
+});
+
+// get single user data (admin)
+exports.getSingleUser = catchAsyncErrors(async (req, res, next) => {
+    const user = await user.findById(req.params.id);
+
+    if (!user) {
+        return next(new ErrorHander(`User does not exist with id: ${req.params.id}`));
+    }
+
+    res.status(200).json({
+        success: true,
+        user,
+    });
 });
