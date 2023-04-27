@@ -75,13 +75,18 @@ exports.getAllOrders = catchAsyncErrors(async (req, res, next) => {
 // update order status--admin
 exports.updateOrder = catchAsyncErrors(async (req, res, next) => {
     const order = await Order.findById(req.params.id);
+    
+   if (!order) {
+        return next(new ErrorHander("Order not found with this id", 404));
+    }
 
     if (order.orderStatus === "Delivered") {
         return next(new ErrorHander("You have already delivered this order", 400));
     }
+ 
 
     order.orderItems.forEach(async (o) => {
-        await updateStock(o.Product, o.quantity);
+        await updateStock(o.product, o.quantity);
     });
 
     order.orderStatus = req.body.status;
@@ -100,7 +105,8 @@ exports.updateOrder = catchAsyncErrors(async (req, res, next) => {
 async function updateStock(id, quantity) {
     const product = await Product.findById(id);
 
-    product.Stock = product.Stock - quantity;
+    product.Stock -= quantity;
+
     await product.save({ validateBeforeSave: false });
 };
 
